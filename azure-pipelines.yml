@@ -1,0 +1,49 @@
+trigger:
+- main
+
+pool:
+  name: Default
+  demands:
+    - Agent.Name -equals {YourAgentName}
+
+variables:
+  azureServiceConnection: 'YourAzureServiceConnectionName'
+  resourceGroup: 'YourResourceGroupName'
+  location: 'East US'
+
+stages:
+- stage: DeployInfrastructure
+  displayName: "Deploy Storage and VM"
+  jobs:
+  - job: DeployResources
+    displayName: "Deploy Resources"
+    steps:
+    - task: AzureCLI@2
+      displayName: "Login to Azure"
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Logging into Azure"
+
+    - task: AzureResourceManagerTemplateDeployment@3
+      displayName: "Deploy Storage Accounts"
+      inputs:
+        azureResourceManagerConnection: $(azureServiceConnection)
+        deploymentScope: 'Resource Group'
+        location: $(location)
+        resourceGroupName: $(resourceGroup)
+        templateLocation: 'Linked artifact'
+        csmFile: 'storagesTemplate.json'
+
+    - task: AzureResourceManagerTemplateDeployment@3
+      displayName: "Deploy Virtual Machine"
+      inputs:
+        azureResourceManagerConnection: $(azureServiceConnection)
+        deploymentScope: 'Resource Group'
+        location: $(location)
+        resourceGroupName: $(resourceGroup)
+        templateLocation: 'Linked artifact'
+        csmFile: 'vm1template.json'
+        csmParametersFile: 'vmTemplate.parm.json'
